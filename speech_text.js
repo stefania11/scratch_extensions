@@ -1,4 +1,3 @@
-
 new (function() {
     var ext = this;
     
