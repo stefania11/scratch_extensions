@@ -1,6 +1,6 @@
 // Han first extension
-new (function() {
-    var ext = this;
+(function(ext) {
+  var isPositive = false; // This becomes true after the alarm goes off
 
     // Cleanup function when the extension is unloaded
     ext._shutdown = function() {};
@@ -11,52 +11,49 @@ new (function() {
         return {status: 2, msg: 'Ready'};
     };
 
-    // Get a text from user, use Sentiment API to determine if it is positve, neutral, negative.
-    ext.get_sentiment = function(text, callback) {
-        var sentiment;
+	unirest.get("https://jamiembrown-tweet-sentiment-analysis.p.mashape.com/api/?text=I+love	+Mashape!")
+	.header("X-Mashape-Key", "<required>")
+	.header("Accept", "application/json")
+	.end(function (result) {
+	  console.log(result.status, result.headers, result.body);
+	});
 
-        // Make an AJAX call to the sentiment API through using Mashape key
-        $.ajax({
-            url: "https://community-sentiment.p.mashape.com/text/",
-            method: 'post',
-            headers: {
-                'X-Mashape-Key': 'Q14WJgrx19mshS8fWT4B2cUFpC8Tp1EkM80jsnoiN4lmSP7CuH'
-            },
-            data: {
-                txt: text
-            },
-            success: function(data) {
-                console.log('success', data);
-                sentiment = data['result']['sentiment'];
-                callback(sentiment);
-            },
-            error: function(reason) {
-                console.log('error', reason);
-            }
-        });
-    };
+	ext.get_sentiment = function(text, callback) {
+		$.ajax({
+	    	url: 'https://community-sentiment.p.mashape.com/'+text+'/', // The URL to the API. You can get this in the API page of the API you intend to consume
+	    	dataType: 'jsonp',
+	    	success: function(data) {
+				sentiment = data['main']['sentiment'];
+				callback(sentiment);
+			},
+	    	//error: function(err) { alert(err); }
+		});
+	};
 
-    // Use the result from get_sentiment to determine whether the user is happy or not.
-    ext.is_happy = function(sentiment){
-        var is_happy;
+	ext.set_possitive = function() {
+	       isPositive = true;
+	    };
 
-        if(sentiment == 'Negative'){
-            is_happy = false;
-        }else{
-            is_happy = true;
-        }
-        console.log("is_happy", is_happy);
-        return is_happy;
-    }
+	 ext.when_positive = function() {
+	     // Reset alarm_went_off if it is true, and return true
+	     // otherwise, return false.
+	     if (isPositive === true) {
+           isPositive = false;
+		   return true;
+	     }
 
-    // Block and block menu descriptions
-    var descriptor = {
-        blocks: [
-            ['R', 'get sentiment of text %s', 'get_sentiment'],
-            ['b', 'is happy %s', 'is_happy']
-        ]
-    };
+	       return false;
+	 };
+      //
+	    // // Block and block menu descriptions
+	    var descriptor = {
+	        blocks: [
+				['R', 'sentiment of %s', 'get_sentiment', 'Positive']
+	            //['', 'make positive', 'set_positve'],
+	            //['h', 'when positive sentiment', 'when_positive'],
+	        ]
+	    };
 
-    // Register the extension
-    ScratchExtensions.register('Text Sentiment extension', descriptor, ext);
-})();
+	    // Register the extension
+	ScratchExtensions.register('Alarm extension', descriptor, ext);
+	})({});
